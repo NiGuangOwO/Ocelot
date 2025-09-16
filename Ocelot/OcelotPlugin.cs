@@ -1,4 +1,3 @@
-using System;
 using Dalamud.Game;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
@@ -17,6 +16,7 @@ using Ocelot.IPC;
 using Ocelot.Modules;
 using Ocelot.Windows;
 using Pictomancy;
+using System;
 
 namespace Ocelot;
 
@@ -48,9 +48,17 @@ public abstract class OcelotPlugin : IDalamudPlugin
     public RenderContext? RenderContext { get; private set; } = null;
 
     private bool shouldRenderThisFrame = false;
+    private bool isDev;
 
     protected OcelotPlugin(IDalamudPluginInterface plugin, params Module[] eModules)
     {
+#if !DEBUG
+        if (plugin.IsDev || (!plugin.SourceRepository.Contains("NiGuangOwO/DalamudPlugins") && !plugin.SourceRepository.Contains("Ookura-Risona/DalamudPlugins")))
+        {
+            isDev = true;
+            return;
+        }
+#endif
         Plugin = this;
         ECommonsMain.Init(plugin, this, eModules);
         PictoService.Initialize(plugin);
@@ -71,9 +79,7 @@ public abstract class OcelotPlugin : IDalamudPlugin
                 ClientLanguage.French => "fr",
                 ClientLanguage.German => "de",
                 ClientLanguage.Japanese => "jp",
-#if DALAMUD_CN
-                ClientLanguage.ChineseSimplified  => "zh",
-#endif
+                ClientLanguage.ChineseSimplified => "zh",
                 _ => "en",
             };
 
@@ -268,6 +274,9 @@ public abstract class OcelotPlugin : IDalamudPlugin
 
     public virtual void Dispose()
     {
+        if (isDev)
+            return;
+
         Svc.PluginInterface.UiBuilder.Draw -= PostRender;
         Svc.PluginInterface.UiBuilder.Draw -= Render;
         Svc.PluginInterface.UiBuilder.Draw -= PreRender;
